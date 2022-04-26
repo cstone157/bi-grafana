@@ -1,0 +1,63 @@
+version: '2.2'
+
+services:
+  # Database Container (neo4j)
+#  neo4j:
+#    container_name: neo4j
+#    image: neo4j:latest
+#    restart: always
+#    environment:
+#      NEO4J_AUTH: neo4j/JustKeepSwimming
+#    ports:
+#      - "7474:7474"
+#      - "7687:7687"
+#    volumes:
+#      - ./neo4j/data:/data     
+#      - ./neo4j/logs:/logs     
+#      - ./neo4j/import:/var/lib/neo4j/import     
+#      - ./neo4j/plugins:/plugins
+#      - ./neo4j/conf:/var/lib/neo4j/conf
+
+
+  # Database Container (postgres)
+  postgres:
+    container_name: pg_container
+    build: ./postgres
+    restart: always
+    environment:
+      POSTGRES_USER: shoc
+      POSTGRES_PASSWORD: JustKeepSwimming
+      POSTGRES_DB: test_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+
+  # Container of PGAdmin (web-based admin tool for postgres database)
+  pgadmin:
+    container_name: pg_admin
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: shoc@shoc.us
+      PGADMIN_DEFAULT_PASSWORD: JustKeepSwimming
+    links:
+      - postgres
+    ports:
+      - "3031:80"
+
+  # Container Grafana
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    links:
+      - postgres
+#      - neo4j
+    env_file:
+      - ./grafana/config.monitoring
+    volumes:
+      - ./grafana/dashboard:/etc/extra-config/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+
