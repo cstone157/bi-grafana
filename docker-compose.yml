@@ -40,6 +40,18 @@ services:
       - ./loki/data:/data/loki
     command: -config.file=/etc/loki/loki-config.yaml
 
+  # Promtail will take any log file and export it to loki for you,
+  #   this one assumes that you used a standard install for the 
+  #   docker containers, this works for linux.  Not sure about MAC's
+  promtail:
+    container_name: promtail
+    image: grafana/promtail:2.3.0
+    restart: unless-stopped
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./promtail/config/promtail-config.yaml:/etc/promtail/promtail-config.yaml
+    command: -config.file=/etc/promtail/promtail-config.yaml
+
   # Container Grafana
   grafana:
     container_name: grafana

@@ -4,7 +4,8 @@ A docker grafana dashboard for prototype purpose (the default configuration is a
 
 # NOTE: 
 With Grafana the time field has to be in UTC format, to do this for example use -> TO_DATE('2021-01-01', 'YYYY-MM-DD') at time zone 'utc' as "time"	to convert the string '2021-01-01' into a UTC formatted date string.
-To initialize submodule, first run '$ git submodule init' and then '$ git submodule update'
+To initialize submodule, first run 'git submodule init' and then 'git submodule update'
+You will need to install the driver for the promtail to pull down the data from docker using 'docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions'
 
 # For Example:
 SELECT
