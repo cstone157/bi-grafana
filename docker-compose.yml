@@ -1,6 +1,15 @@
 version: '2.2'
 
+networks:
+  business-intelligence-net:
+    driver: bridge
+
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+
 services:
+## --------------------------------------------- POSTGRES SECTION ---------------------------------------------
   # Database Container (postgres)
   postgres:
     container_name: pg_container
@@ -14,6 +23,8 @@ services:
       - "5432:5432"
     volumes:
       - ./postgres/data:/var/lib/postgresql/data
+    networks:
+      - business-intelligence-net
 
   # Container of PGAdmin (web-based admin tool for postgres database)
   pgadmin:
@@ -27,18 +38,24 @@ services:
       - postgres
     ports:
       - "3031:80"
+    networks:
+      - business-intelligence-net
+## ------------------------------------------- END POSTGRES SECTION -------------------------------------------
 
+## ------------------------------------------ LOG-MONITORING SECTION ------------------------------------------
   # Loki container for log aggregation
   loki:
     container_name: loki
     image: grafana/loki:2.3.0
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3100:3100"
+      - ":3100:3100"
     volumes:
       - ./loki/config/loki-config.yaml:/etc/loki/loki-config.yaml
       - ./loki/data:/data/loki
     command: -config.file=/etc/loki/loki-config.yaml
+    networks:
+      - business-intelligence-net
 
   # Promtail will take any log file and export it to loki for you,
   #   this one assumes that you used a standard install for the 
@@ -51,11 +68,38 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - ./promtail/config/promtail-config.yaml:/etc/promtail/promtail-config.yaml
     command: -config.file=/etc/promtail/promtail-config.yaml
+    networks:
+      - business-intelligence-net
+## ---------------------------------------- END LOG-MONITORING SECTION ----------------------------------------
+
+## ----------------------------------------- SYSTEM-MONITORING SECTION ----------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.37.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    expose:
+      - 9090
+    networks:
+      - business-intelligence-net
+    labels:
+      org.label-schema.group: "business-intelligence"
+## --------------------------------------- END SYSTEM-MONITORING SECTION --------------------------------------
+
 
   # Container Grafana
   grafana:
-    container_name: grafana
     image: grafana/grafana
+    container_name: grafana
     ports:
       - 3000:3000
     links:
@@ -71,3 +115,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_SECURITY_ALLOW_EMBEDDING=true
+    networks:
+      - business-intelligence-net
+    labels:
+      org.label-schema.group: "business-intelligence"
