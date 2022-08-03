@@ -24,10 +24,10 @@ datasources:
     secureJsonData:
       password: JustKeepSwimming
     readOnly: false
-	
+
   - name: Loki
     type: loki
-	access: proxy
+    access: proxy
     url: http://loki:3100
     version: 1
 
