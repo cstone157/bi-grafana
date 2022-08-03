@@ -49,7 +49,7 @@ services:
     image: grafana/loki:2.3.0
     restart: unless-stopped
     ports:
-      - ":3100:3100"
+      - "3100:3100"
     volumes:
       - ./loki/config/loki-config.yaml:/etc/loki/loki-config.yaml
       - ./loki/data:/data/loki
@@ -87,8 +87,24 @@ services:
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
     restart: unless-stopped
-    expose:
-      - 9090
+    ports:
+      - "9090:9090"
+    networks:
+      - business-intelligence-net
+    labels:
+      org.label-schema.group: "business-intelligence"
+
+  alertmanager:
+    image: prom/alertmanager:v0.24.0
+    container_name: alertmanager
+    volumes:
+      - ./alertmanager:/etc/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
     networks:
       - business-intelligence-net
     labels:
