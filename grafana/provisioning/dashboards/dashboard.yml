@@ -1,11 +1,20 @@
 apiVersion: 1
 
 providers:
-- name: 'Sample_Data'
+- name: 'T_Oil Sample Dashboard'
   orgId: 1
   folder: ''
   type: file
   disableDeletion: false
   editable: true
   options:
-    path: /etc/grafana/provisioning/dashboards
+    path: /etc/grafana/provisioning/dashboards/01
+
+- name: 'Loki Logging Sample Dashboard'
+  orgId: 1
+  folder: ''
+  type: file
+  disableDeletion: false
+  editable: true
+  options:
+    path: /etc/grafana/provisioning/dashboards/02
