@@ -1,24 +1,15 @@
 version: '2.2'
 
+networks:
+  business-intelligence-net:
+    driver: bridge
+
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+
 services:
-  # Database Container (neo4j)
-#  neo4j:
-#    container_name: neo4j
-#    image: neo4j:latest
-#    restart: always
-#    environment:
-#      NEO4J_AUTH: neo4j/JustKeepSwimming
-#    ports:
-#      - "7474:7474"
-#      - "7687:7687"
-#    volumes:
-#      - ./neo4j/data:/data     
-#      - ./neo4j/logs:/logs     
-#      - ./neo4j/import:/var/lib/neo4j/import     
-#      - ./neo4j/plugins:/plugins
-#      - ./neo4j/conf:/var/lib/neo4j/conf
-
-
+## --------------------------------------------- POSTGRES SECTION ---------------------------------------------
   # Database Container (postgres)
   postgres:
     container_name: pg_container
@@ -32,6 +23,8 @@ services:
       - "5432:5432"
     volumes:
       - ./postgres/data:/var/lib/postgresql/data
+    networks:
+      - business-intelligence-net
 
   # Container of PGAdmin (web-based admin tool for postgres database)
   pgadmin:
@@ -45,19 +38,182 @@ services:
       - postgres
     ports:
       - "3031:80"
+    networks:
+      - business-intelligence-net
+## ------------------------------------------- END POSTGRES SECTION -------------------------------------------
+
+## ------------------------------------------ LOG-MONITORING SECTION ------------------------------------------
+  # Loki container for log aggregation
+  loki:
+    container_name: loki
+    image: grafana/loki:2.3.0
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/config/loki-config.yaml:/etc/loki/loki-config.yaml
+      - ./loki/data:/data/loki
+    command: -config.file=/etc/loki/loki-config.yaml
+    networks:
+      - business-intelligence-net
+
+  # Promtail will take any log file and export it to loki for you,
+  #   this one assumes that you used a standard install for the 
+  #   docker containers, this works for linux.  Not sure about MAC's
+  promtail:
+    container_name: promtail
+    image: grafana/promtail:2.3.0
+    restart: unless-stopped
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./promtail/config/promtail-config.yaml:/etc/promtail/promtail-config.yaml
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    networks:
+      - business-intelligence-net
+## ---------------------------------------- END LOG-MONITORING SECTION ----------------------------------------
+
+## ----------------------------------------- SYSTEM-MONITORING SECTION ----------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.37.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    expose:
+      - 9090
+    networks:
+      - business-intelligence-net
+    labels:
+      org.label-schema.group: "business-intelligence"
+
+  alertmanager:
+    image: prom/alertmanager:v0.24.0
+    container_name: alertmanager
+    volumes:
+      - ./alertmanager:/etc/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    restart: unless-stopped
+    expose:
+      - 9093
+    networks:
+      - business-intelligence-net
+    labels:
+      org.label-schema.group: "business-intelligence"
+
+  nodeexporter:
+    image: prom/node-exporter:v1.3.1
+    container_name: nodeexporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    expose:
+      - 9100
+    networks:
+      - business-intelligence-net
+    labels:
+      org.label-schema.group: "business-intelligence"
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.44.0
+    container_name: cadvisor
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      #- /cgroup:/cgroup:ro #doesn't work on MacOS only for Linux
+    restart: unless-stopped
+    expose:
+      - 8080
+    networks:
+      - business-intelligence-net
+    labels:
+      org.label-schema.group: "business-intelligence"
+
+  pushgateway:
+    image: prom/pushgateway:v1.4.3
+    container_name: pushgateway
+    restart: unless-stopped
+    expose:
+      - 9091
+    networks:
+      - business-intelligence-net
+    labels:
+      org.label-schema.group: "business-intelligence"
+
+  # CADDY is used to have a single sign-on for all of our applications.  Excluding pgAdmin,
+  #   because pgAdmin refuses to play nice.
+  caddy:
+    image: caddy:2.3.0
+    container_name: caddy
+    ports:
+      - "3000:3000"  # Grafana's Port
+      - "9090:9090"  # Prometheus's Port
+      - "9093:9093"  # Alertmanager's Port
+      - "9091:9091"  # Pushgateway's Port
+    volumes:
+      - ./caddy:/etc/caddy
+    environment:
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH:-JDJhJDE0JE91S1FrN0Z0VEsyWmhrQVpON1VzdHVLSDkyWHdsN0xNbEZYdnNIZm1pb2d1blg4Y09mL0ZP}
+    restart: unless-stopped
+    networks:
+      - business-intelligence-net
+    labels:
+      org.label-schema.group: "business-intelligence"
+## --------------------------------------- END SYSTEM-MONITORING SECTION --------------------------------------
 
   # Container Grafana
   grafana:
-    container_name: grafana
+#    image: grafana/grafana:9.0.3
     image: grafana/grafana
-    ports:
-      - 3000:3000
-    links:
-      - postgres
-#      - neo4j
-    env_file:
-      - ./grafana/config.monitoring
+    container_name: grafana
+    user: "0"
     volumes:
-      - ./grafana/dashboard:/etc/extra-config/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+#    env_file:
+#      - ./grafana/config.monitoring
+    environment:
+#      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+#      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+#      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    restart: unless-stopped
+#    links:
+#      - postgres
+    expose:
+      - 3000
+#    ports:
+#      - 3000:3000
+    networks:
+      - business-intelligence-net
+    labels:
+      org.label-schema.group: "business-intelligence"
+
 
