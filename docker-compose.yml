@@ -1,4 +1,4 @@
-version: '2.2'
+version: '3.3'
 
 networks:
   business-intelligence-net:
@@ -9,6 +9,42 @@ volumes:
     grafana_data: {}
 
 services:
+
+## --------------------------------------------- DASHBOARD SECTION --------------------------------------------
+  # Container Grafana
+  grafana:
+#    image: grafana/grafana:9.0.3
+    image: grafana/grafana
+    container_name: grafana
+    user: "0"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+#    env_file:
+#      - ./grafana/config.monitoring
+    environment:
+#      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+#      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+#      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    restart: unless-stopped
+    links:
+      - postgres
+    expose:
+      - 3000
+#    ports:
+#      - 3000:3000
+    networks:
+      - business-intelligence-net
+    labels:
+      org.label-schema.group: "business-intelligence"
+## ------------------------------------------- END DASHBOARD SECTION ------------------------------------------
+
+
 ## --------------------------------------------- POSTGRES SECTION ---------------------------------------------
   # Database Container (postgres)
   postgres:
@@ -183,37 +219,4 @@ services:
     labels:
       org.label-schema.group: "business-intelligence"
 ## --------------------------------------- END SYSTEM-MONITORING SECTION --------------------------------------
-
-  # Container Grafana
-  grafana:
-#    image: grafana/grafana:9.0.3
-    image: grafana/grafana
-    container_name: grafana
-    user: "0"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
-      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
-#    env_file:
-#      - ./grafana/config.monitoring
-    environment:
-#      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
-#      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
-#      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_AUTH_DISABLE_LOGIN_FORM=true
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_SECURITY_ALLOW_EMBEDDING=true
-    restart: unless-stopped
-#    links:
-#      - postgres
-    expose:
-      - 3000
-#    ports:
-#      - 3000:3000
-    networks:
-      - business-intelligence-net
-    labels:
-      org.label-schema.group: "business-intelligence"
-
 

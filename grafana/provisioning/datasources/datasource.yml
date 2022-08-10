@@ -1,30 +1,6 @@
 apiVersion: 1
 
-deleteDatasources:
-  - name: Parametric
-  - name: Sample_Data
-
 datasources:
-  - name: Parametric
-    type: postgres
-    typeName: PostgreSQL
-    access: proxy
-    url: postgres
-    user: shoc
-    database: parametric
-    basicAuth: false
-    isDefault: false
-    jsonData:
-      postgresVersion: 903
-      sslmode: disable
-      tlsAuth: false
-      tlsAuthWithCACert: false
-      tlsConfigurationMethod: file-path
-      tlsSkipVerify: true
-    secureJsonData:
-      password: JustKeepSwimming
-    readOnly: false
-
   - name: Sample_Data
     type: postgres
     typeName: PostgreSQL
@@ -45,3 +21,17 @@ datasources:
       password: JustKeepSwimming
     readOnly: false
 
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    version: 1
+
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://prometheus:9090
+    basicAuth: false
+    isDefault: false
+    editable: true
