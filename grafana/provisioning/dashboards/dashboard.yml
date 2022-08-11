@@ -16,7 +16,7 @@ providers:
   disableDeletion: false
   editable: true
   options:
-    path: /etc/grafana/provisioning/dashboards/postgres
+    path: /etc/grafana/provisioning/dashboards/sample_data
 
 - name: 'Loki'
   folder: 'Loki Logging Sample Examples'
