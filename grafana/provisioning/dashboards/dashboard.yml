@@ -1,12 +1,27 @@
 apiVersion: 1
 
 providers:
-  - name: 'Prometheus'
-    orgId: 1
-    folder: 'NodeExporter/Prometheus Examples'
-    type: file
-    disableDeletion: false
-    editable: true
-    allowUiUpdates: true
-    options:
-      path: /etc/grafana/provisioning/dashboards/prometheus
+- name: 'Prometheus'
+  folder: 'NodeExporter/Prometheus Examples'
+  type: file
+  disableDeletion: false
+  editable: true
+  allowUiUpdates: true
+  options:
+    path: /etc/grafana/provisioning/dashboards/prometheus
+
+- name: 'Sample_Data'
+  folder: 'Postgresql Sample Examples'
+  type: file
+  disableDeletion: false
+  editable: true
+  options:
+    path: /etc/grafana/provisioning/dashboards/postgres
+
+- name: 'Loki'
+  folder: 'Loki Logging Sample Examples'
+  type: file
+  disableDeletion: false
+  editable: true
+  options:
+    path: /etc/grafana/provisioning/dashboards/loki
