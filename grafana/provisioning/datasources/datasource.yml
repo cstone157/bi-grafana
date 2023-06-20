@@ -20,18 +20,3 @@ datasources:
     secureJsonData:
       password: JustKeepSwimming
     readOnly: false
-
-  - name: Loki
-    type: loki
-    access: proxy
-    url: http://loki:3100
-    version: 1
-
-  - name: Prometheus
-    type: prometheus
-    access: proxy
-    orgId: 1
-    url: http://prometheus:9090
-    basicAuth: false
-    isDefault: false
-    editable: true

@@ -2,6 +2,12 @@
 
 A docker grafana dashboard for prototype purpose (the default configuration is already connected to the postgres-docker, so that there is a preloaded set of data).
 
+# Links
+Grafana       - localhost:3000/
+NIFI          - localhost:8091/nifi/
+PG_Admin      - localhost:3031/
+MongoExpress  - localhost:3032/
+
 # NOTE: 
 With Grafana the time field has to be in UTC format, to do this for example use -> TO_DATE('2021-01-01', 'YYYY-MM-DD') at time zone 'utc' as "time"	to convert the string '2021-01-01' into a UTC formatted date string.
 
