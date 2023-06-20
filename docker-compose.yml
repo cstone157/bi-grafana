@@ -70,6 +70,14 @@ services:
       - business-intelligence-net
 ## ------------------------------------------- END POSTGRES SECTION -------------------------------------------
 
+  mongodb:
+    image: mongo:2.4
+    command: --smallfiles 
+    ports:
+      - 27017:27017
+    volumes:
+      - ./mongodb/data:/data/db
+
   # configuration manager for NiFi
   zookeeper:
       hostname: myzookeeper
@@ -127,7 +135,7 @@ services:
           - ./nifi/state:/opt/nifi/nifi-current/state
           - ./nifi/logs:/opt/nifi/nifi-current/logs
           # uncomment the next line after copying the /conf directory from the container to your local directory to persist NiFi flows
-          #- ./nifi/conf:/opt/nifi/nifi-current/conf
+          - ./nifi/conf:/opt/nifi/nifi-current/conf
       networks:
           - business-intelligence-net
 
