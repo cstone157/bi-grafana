@@ -4,4 +4,6 @@
 .idea/
 
 postgres/
-neo4j/
+nifi/
+nifi_registry/
+mongodb/
