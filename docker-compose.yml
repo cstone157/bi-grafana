@@ -27,7 +27,8 @@ services:
       - GF_SECURITY_ALLOW_EMBEDDING=true
     restart: unless-stopped
     links:
-      - postgres
+      - bi_pg
+      #- bi_mongo
     ports:
       - 3000:3000
     expose:
@@ -41,7 +42,7 @@ services:
 
 ## --------------------------------------------- POSTGRES SECTION ---------------------------------------------
   # Database Container (postgres)
-  postgres:
+  bi_pg:
     container_name: bi_pg
     image: postgres:12.10
     restart: always
@@ -57,7 +58,7 @@ services:
       - business-intelligence-net
 
   # Container of PGAdmin (web-based admin tool for postgres database)
-  pgadmin:
+  bi_pg_admin:
     container_name: bi_pg_admin
     image: dpage/pgadmin4
     restart: always
@@ -65,7 +66,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: shoc@shoc.us
       PGADMIN_DEFAULT_PASSWORD: shoc@shoc.us
     links:
-      - postgres
+      - bi_pg
     ports:
       - 3031:80
     networks:
@@ -73,23 +74,46 @@ services:
 ## ------------------------------------------- END POSTGRES SECTION -------------------------------------------
 
 ## --------------------------------------------- MONGODB SECTION ---------------------------------------------
+#  bi_mongo:
+#    image: mongo
+#    container_name: bi_mongo
+#    restart: always
+#    environment:
+#      MONGO_INITDB_ROOT_USERNAME: root
+#      MONGO_INITDB_ROOT_PASSWORD: example
+#    ports:
+#      - 27017:27017
+#    volumes:
+#      - ./mongodb/data:/data/db
+#    networks:
+#      - business-intelligence-net
+#      
+#  bi_mongo_exp:
+#    image: mongo-express
+#    container_name: bi_mongo_exp
+#    restart: always
+#    ports:
+#      - 3032:8081
+#    environment:
+#      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+#      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+#      ME_CONFIG_MONGODB_URL: mongodb://root:example@bi_mongo:27017/
+#    networks:
+#      - business-intelligence-net
+#    links:
+#      - bi_mongo
+
   mongo:
     image: mongo
-    container_name: bi_mongo
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
     ports:
       - 27017:27017
-    volumes:
-      - ./mongodb/data:/data/db
-    networks:
-      - business-intelligence-net
-      
+  
   mongo-express:
     image: mongo-express
-    container_name: bi_mongo_exp
     restart: always
     ports:
       - 3032:8081
@@ -97,9 +121,8 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
-    networks:
-      - business-intelligence-net
-      
+
+
 ## ------------------------------------------- END MONGODB SECTION -------------------------------------------
 
 ## --------------------------------------------- NIFI SECTION ---------------------------------------------
